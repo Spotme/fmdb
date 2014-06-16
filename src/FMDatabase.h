@@ -38,7 +38,7 @@
 - (BOOL)open;
 #endif
 #if SQLITE_VERSION_NUMBER >= 3005000
-- (BOOL)openWithFlags:(int)flags;
+- (BOOL)openWithFlags:(int)flags encryptionKey:(NSString*)encryptionKey;
 #endif
 - (BOOL)close;
 //- (BOOL)goodConnection;
