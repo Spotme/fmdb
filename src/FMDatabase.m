@@ -90,7 +90,6 @@
 #endif
 
 #if SQLITE_VERSION_NUMBER >= 3005000
-extern int sqlite3_key(sqlite3 *db, const void *pKey, int nKey);
 - (BOOL)openWithFlags:(int)flags encryptionKey:(NSString*)encryptionKey {
     if ((flags & SQLITE_OPEN_SHAREDCACHE) && (flags & SQLITE_OPEN_READONLY)) {
         // Multiple shared-cache connections to a db file all seem to inherit the writeability of
@@ -110,14 +109,20 @@ extern int sqlite3_key(sqlite3 *db, const void *pKey, int nKey);
     }
     
     if (encryptionKey) {
-        const char* key = [encryptionKey UTF8String];
-        sqlite3_key(db, key, (int)strlen(key));
+        // http://sqlcipher.net/sqlcipher-api/#key
+        NSString* pragma = $sprintf(@"PRAGMA key = '%@'", [encryptionKey stringByReplacingOccurrencesOfString: @"'" withString: @"''"]);
+
+        if (![self executeUpdate: pragma]) {
+            Warn(@"CBLDatabase: Couldn't give encryption key; SQLite may not be built with SQLCipher");
+            return NO;
+        }
+        
         if (sqlite3_exec(db, (const char*) "SELECT count(*) FROM sqlite_master;", NULL, NULL, NULL) == SQLITE_OK) {
             // password is correct, or, database has been initialized
             return YES;
         } else {
             // incorrect password!
-            NSLog(@"error opening!: could not set encryption key!");
+            Warn(@"error opening!: could not set encryption key!");
             return NO;
         }
     }
