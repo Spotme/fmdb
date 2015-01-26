@@ -90,7 +90,7 @@
 #endif
 
 #if SQLITE_VERSION_NUMBER >= 3005000
-- (BOOL)openWithFlags:(int)flags encryptionKey:(NSString*)encryptionKey {
+- (BOOL)openWithFlags:(int)flags {
     if ((flags & SQLITE_OPEN_SHAREDCACHE) && (flags & SQLITE_OPEN_READONLY)) {
         // Multiple shared-cache connections to a db file all seem to inherit the writeability of
         // the first connection, meaning that the READONLY flag doesn't work properly. So I'll need
@@ -106,25 +106,6 @@
     }
     if (busyRetryTimeout > 0.0) {
         sqlite3_busy_timeout(db, (int)(busyRetryTimeout * 1000));
-    }
-    
-    if (encryptionKey) {
-        // http://sqlcipher.net/sqlcipher-api/#key
-        NSString* pragma = $sprintf(@"PRAGMA key = '%@'", [encryptionKey stringByReplacingOccurrencesOfString: @"'" withString: @"''"]);
-
-        if (![self executeUpdate: pragma]) {
-            Warn(@"CBLDatabase: Couldn't give encryption key; SQLite may not be built with SQLCipher");
-            return NO;
-        }
-        
-        if (sqlite3_exec(db, (const char*) "SELECT count(*) FROM sqlite_master;", NULL, NULL, NULL) == SQLITE_OK) {
-            // password is correct, or, database has been initialized
-            return YES;
-        } else {
-            // incorrect password!
-            Warn(@"error opening!: could not set encryption key!");
-            return NO;
-        }
     }
     
     return YES;
